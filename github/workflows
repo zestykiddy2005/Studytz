@@ -1,0 +1,64 @@
+name: Build StudyTZ APK
+
+on:
+  push:
+      branches: [ main ]
+        workflow_dispatch:
+
+        jobs:
+          build:
+              runs-on: ubuntu-latest
+
+                  steps:
+                        - name: Checkout code
+                                uses: actions/checkout@v4
+
+                                      - name: Extract ZIP if present
+                                              run: |
+                                                        if [ -f studytz.zip ]; then
+                                                                    unzip -o studytz.zip -d extracted
+                                                                                cp -r extracted/. .
+                                                                                            rm -rf extracted studytz.zip
+                                                                                                      fi
+
+                                                                                                            - name: Set up JDK 17
+                                                                                                                    uses: actions/setup-java@v4
+                                                                                                                            with:
+                                                                                                                                      java-version: '17'
+                                                                                                                                                distribution: 'temurin'
+
+                                                                                                                                                      - name: Set up Android SDK
+                                                                                                                                                              uses: android-actions/setup-android@v3
+
+                                                                                                                                                                    - name: Install Android SDK platform 36
+                                                                                                                                                                            run: |
+                                                                                                                                                                                      yes | sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
+
+                                                                                                                                                                                            - name: Create dummy keystore for debug build
+                                                                                                                                                                                                    run: |
+                                                                                                                                                                                                              keytool -genkeypair -v \
+                                                                                                                                                                                                                          -keystore debug.keystore \
+                                                                                                                                                                                                                                      -alias androiddebugkey \
+                                                                                                                                                                                                                                                  -keyalg RSA -keysize 2048 \
+                                                                                                                                                                                                                                                              -validity 10000 \
+                                                                                                                                                                                                                                                                          -storepass android \
+                                                                                                                                                                                                                                                                                      -keypass android \
+                                                                                                                                                                                                                                                                                                  -dname "CN=Android Debug,O=Android,C=US"
+
+                                                                                                                                                                                                                                                                                                        - name: Create .env file
+                                                                                                                                                                                                                                                                                                                run: |
+                                                                                                                                                                                                                                                                                                                          cp .env.example .env || touch .env
+
+                                                                                                                                                                                                                                                                                                                                - name: Grant execute permission for gradlew
+                                                                                                                                                                                                                                                                                                                                        run: chmod +x gradlew
+
+                                                                                                                                                                                                                                                                                                                                              - name: Build Debug APK
+                                                                                                                                                                                                                                                                                                                                                      run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+                                                                                                                                                                                                                                                                                                                                                            - name: Upload APK
+                                                                                                                                                                                                                                                                                                                                                                    uses: actions/upload-artifact@v4
+                                                                                                                                                                                                                                                                                                                                                                            with:
+                                                                                                                                                                                                                                                                                                                                                                                      name: StudyTZ-debug
+                                                                                                                                                                                                                                                                                                                                                                                                path: app/build/outputs/apk/debug/app-debug.apk
+                                                                                                                                                                                                                                                                                                                                                                                                          retention-days: 7
+                                                                                                                                                                                                                                                                                                                                                                                                
