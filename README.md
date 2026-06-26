@@ -1,0 +1,2 @@
+# Studytz
+Student app
